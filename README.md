@@ -1,3 +1,3 @@
-# homework-template
+# homework
 
-This is a homework template repository.
+This is a homework repository for DS 5640.
