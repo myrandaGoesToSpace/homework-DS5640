@@ -16,14 +16,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Instructions 
 
-X Write functions that implement the L1 loss and tilted absolute loss functions.
-
-- Create a figure that shows lpsa (x-axis) versus lcavol (y-axis). Add and label (using the 'legend' function) the linear model predictors associated with L2 loss, L1 loss, and tilted absolute value loss for tau = 0.25 and 0.75.
-
-- Write functions to fit and predict from a simple nonlinear model with three parameters defined by 'beta[1] + beta[2]*exp(-beta[3]*x)'. Hint: make copies of 'fit_lin' and 'predict_lin' and modify them to fit the nonlinear model. Use c(-1.0, 0.0, -0.3) as 'beta_init'.
-
-- Create a figure that shows lpsa (x-axis) versus lcavol (y-axis). Add and label (using the 'legend' function) the nonlinear model predictors associated with L2 loss, L1 loss, and tilted absolute value loss for tau = 0.25 and 0.75.
-
 
 ```{r}
 ## load prostate data
@@ -52,9 +44,9 @@ L2_loss <- function(y, yhat, ...)
   (y-yhat)^2
 
 ## fit simple linear model using numerical optimization
-fit_lin <- function(y, x, loss=L2_loss, beta_init = c(-0.51, 0.75), tau = 0, ...) {
+fit_lin <- function(y, x, loss=L2_loss, beta_init = c(-0.51, 0.75)) {
   err <- function(beta)
-    mean(loss(y,  beta[1] + beta[2]*x, tau = tau))
+    mean(loss(y,  beta[1] + beta[2]*x))
   beta <- optim(par = beta_init, fn = err)
   return(beta)
 }
@@ -128,14 +120,18 @@ L1_loss <- function(y,yhat, ...){
 
 # TITLTED ABSOLUTE LOSS
 tilted_loss <- function(y, yhat, tau){
-  if((y - yhat) > 0){
-    return(tau * (y-yhat))
-  }
-  
-  else{
-    return((tau - 1) * (y - yhat))
-  }
+  ifelse(y-yhat>0, tau * (y-yhat), (tau - 1) * (y-yhat))
 }
+
+# FIT MODELS
+## fit simple linear model using numerical optimization
+fit_lin_tilt <- function(y, x, loss=L2_loss, beta_init = c(-0.51, 0.75), tau = 0.25) {
+  err <- function(beta)
+    mean(loss(y,  beta[1] + beta[2]*x, tau))
+  beta <- optim(par = beta_init, fn = err)
+  return(beta)
+}
+
 
 # PLOT L1
 err_grd <- seq(-1,1,length.out=200)
@@ -150,14 +146,14 @@ lin_beta_l1 <- fit_lin(y=prostate_train$lcavol,
 lin_pred_l1 <- predict_lin(x=x_grid, beta=lin_beta_l1$par)
 
 # FIT DATA TO TILTED WITH tau = 0.25
-lin_beta_tilt_25 <- fit_lin(y = prostate_train$lcavol,
+lin_beta_tilt_25 <- fit_lin_tilt(y = prostate_train$lcavol,
                          x = prostate_train$lpsa,
                          tau = 0.25,
                          loss = tilted_loss)
 lin_pred_tilt_25 <- predict_lin(x = x_grid, beta = lin_beta_tilt_25$par)
 
 # FIT DATA TO TILTED WITH tau = 0.75
-lin_beta_tilt_75 <- fit_lin(y = prostate_train$lcavol,
+lin_beta_tilt_75 <- fit_lin_tilt(y = prostate_train$lcavol,
                          x = prostate_train$lpsa,
                          tau = 0.75,
                          loss = tilted_loss)
@@ -168,8 +164,62 @@ lin_pred_tilt_75 <- predict_lin(x = x_grid, beta = lin_beta_tilt_75$par)
 plot_psa_data()
 
 lines(x = x_grid, y = lin_pred_l1, col = 'darkgreen', lwd = 2)
-lines(x = x_grid, y = lin_pred_tilt_25, col = 'pink', lwd = 2, lty = 2)
+lines(x = x_grid, y = lin_pred_tilt_25, col = 'pink', lwd = 2)
 lines(x = x_grid, y = lin_pred_tilt_75, col = 'yellow', lwd = 2)
+legend("topleft", c("L1", "Tilted, tau = 0.25", "Tilted, tau = 0.75"), lwd = c(2,2,2),col = c("darkgreen", "pink", "yellow"))
+
+# FIT NONLINEAR MODEL
+
+## fit simple nonlinear model using numerical optimization
+fit_nonlin <- function(y, x, loss=L2_loss, beta_init = c(-1.0, 0.0, -0.3)) {
+  err <- function(beta)
+    mean(loss(y,  beta[1] + beta[2]*exp(-beta[3]*x)))
+  beta <- optim(par = beta_init, fn = err)
+  return(beta)
+}
+
+fit_nonlin_tilt <- function(y, x, loss=L2_loss, beta_init = c(-1.0, 0.0, -0.3), tau = 0.25) {
+  err <- function(beta)
+    mean(loss(y,  beta[1] + beta[2]*exp(-beta[3]*x), tau))
+  beta <- optim(par = beta_init, fn = err)
+  return(beta)
+}
+
+## make predictions from linear model
+predict_nonlin <- function(x, beta)
+  beta[1] + beta[2]*exp(-beta[3]*x)
+
+
+# FIT DATA TO L1 - NONLINEAR
+nonlin_beta_l1 <- fit_nonlin(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L1_loss)
+
+nonlin_pred_l1 <- predict_nonlin(x=x_grid, beta=lin_beta_l1$par)
+
+# FIT DATA TO TILTED WITH tau = 0.25 - NONLINEAR
+nonlin_beta_tilt_25 <- fit_nonlin_tilt(y = prostate_train$lcavol,
+                         x = prostate_train$lpsa,
+                         tau = 0.25,
+                         loss = tilted_loss)
+nonlin_pred_tilt_25 <- predict_nonlin(x = x_grid, beta = lin_beta_tilt_25$par)
+
+# FIT DATA TO TILTED WITH tau = 0.75 - NONLINEAR
+nonlin_beta_tilt_75 <- fit_nonlin_tilt(y = prostate_train$lcavol,
+                         x = prostate_train$lpsa,
+                         tau = 0.75,
+                         loss = tilted_loss)
+
+nonlin_pred_tilt_75 <- predict_nonlin(x = x_grid, beta = lin_beta_tilt_75$par)
+
+# PLOT - NONLINEAR
+plot_psa_data()
+
+lines(x = x_grid, y = nonlin_pred_l1, col = 'darkgreen', lwd = 2)
+lines(x = x_grid, y = nonlin_pred_tilt_25, col = 'pink', lwd = 2)
+lines(x = x_grid, y = nonlin_pred_tilt_75, col = 'yellow', lwd = 2)
+legend("topleft", c("L1", "Tilted, tau = 0.25", "Tilted, tau = 0.75"), lwd = c(2,2,2),col = c("darkgreen", "pink", "yellow"))
+
 
 
 ```
