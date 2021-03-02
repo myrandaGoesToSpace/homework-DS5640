@@ -166,7 +166,8 @@ plot_psa_data()
 lines(x = x_grid, y = lin_pred_l1, col = 'darkgreen', lwd = 2)
 lines(x = x_grid, y = lin_pred_tilt_25, col = 'pink', lwd = 2)
 lines(x = x_grid, y = lin_pred_tilt_75, col = 'yellow', lwd = 2)
-legend("topleft", c("L1", "Tilted, tau = 0.25", "Tilted, tau = 0.75"), lwd = c(2,2,2),col = c("darkgreen", "pink", "yellow"))
+lines(x = x_grid, y = lin_pred, col = "blue")
+legend("topleft", c("L1", "L2", "Tilted, tau = 0.25", "Tilted, tau = 0.75"), lwd = c(2,2,2),col = c("darkgreen", "blue", "pink", "yellow"))
 
 # FIT NONLINEAR MODEL
 
@@ -195,14 +196,21 @@ nonlin_beta_l1 <- fit_nonlin(y=prostate_train$lcavol,
                     x=prostate_train$lpsa,
                     loss=L1_loss)
 
-nonlin_pred_l1 <- predict_nonlin(x=x_grid, beta=lin_beta_l1$par)
+nonlin_pred_l1 <- predict_nonlin(x=x_grid, beta=nonlin_beta_l1$par)
+
+# FIT DATA TO L2 - NONLINEAR
+nonlin_beta_l2 <- fit_nonlin(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L2_loss)
+
+nonlin_pred_l2 <- predict_nonlin(x=x_grid, beta=nonlin_beta_l2$par)
 
 # FIT DATA TO TILTED WITH tau = 0.25 - NONLINEAR
 nonlin_beta_tilt_25 <- fit_nonlin_tilt(y = prostate_train$lcavol,
                          x = prostate_train$lpsa,
                          tau = 0.25,
                          loss = tilted_loss)
-nonlin_pred_tilt_25 <- predict_nonlin(x = x_grid, beta = lin_beta_tilt_25$par)
+nonlin_pred_tilt_25 <- predict_nonlin(x = x_grid, beta = nonlin_beta_tilt_25$par)
 
 # FIT DATA TO TILTED WITH tau = 0.75 - NONLINEAR
 nonlin_beta_tilt_75 <- fit_nonlin_tilt(y = prostate_train$lcavol,
@@ -210,7 +218,7 @@ nonlin_beta_tilt_75 <- fit_nonlin_tilt(y = prostate_train$lcavol,
                          tau = 0.75,
                          loss = tilted_loss)
 
-nonlin_pred_tilt_75 <- predict_nonlin(x = x_grid, beta = lin_beta_tilt_75$par)
+nonlin_pred_tilt_75 <- predict_nonlin(x = x_grid, beta = nonlin_beta_tilt_75$par)
 
 # PLOT - NONLINEAR
 plot_psa_data()
@@ -218,7 +226,8 @@ plot_psa_data()
 lines(x = x_grid, y = nonlin_pred_l1, col = 'darkgreen', lwd = 2)
 lines(x = x_grid, y = nonlin_pred_tilt_25, col = 'pink', lwd = 2)
 lines(x = x_grid, y = nonlin_pred_tilt_75, col = 'yellow', lwd = 2)
-legend("topleft", c("L1", "Tilted, tau = 0.25", "Tilted, tau = 0.75"), lwd = c(2,2,2),col = c("darkgreen", "pink", "yellow"))
+lines(x = x_grid, y = nonlin_pred_l2, col = "blue")
+legend("topleft", c("L1","L2", "Tilted, tau = 0.25", "Tilted, tau = 0.75"), lwd = c(2,2,2),col = c("darkgreen","blue", "pink", "yellow"))
 
 
 
