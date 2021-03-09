@@ -1,0 +1,170 @@
+---
+title: "Homework 4"
+author: "Uselton, Myranda"
+date: "`r date()`"
+output: 
+  html_document:
+    toc: true
+  md_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Homework 4
+
+### Question 4 - ISLR
+
+a) about 10%
+b) about 1%
+c) near 0 - a very small decimal
+d) as the number of features p increases, the KNN looks at a smaller percentage of observations. Thus, there are very few observations near the feature's "location."
+e) Length of the sides of the hypercube:
+```{r}
+
+p <- 1
+lambda <- 0.1^(1/p)
+lambda
+
+p <- 2
+lambda <- 0.1^(1/p)
+lambda
+
+p <- 100
+lambda <- 0.1^(1/p)
+lambda
+```
+The sides of the cube grow nearly to 1.
+
+
+### Question 10 - ISLR
+
+a)
+
+```{r}
+library(ISLR)
+library(ggplot2)
+library(dplyr)
+library(caret)
+library(e1071)
+library(MASS)
+library(class)
+
+data <- Weekly
+
+head(data)
+
+summary(data)
+
+ggplot(data, aes(Year, Lag1)) + geom_point()
+
+ggplot(data, aes(Year, Lag2)) + geom_point()
+
+ggplot(data, aes(Year, Lag3)) + geom_point()
+
+ggplot(data, aes(Year, Lag4)) + geom_point()
+
+ggplot(data, aes(Year, Lag5)) + geom_point()
+```
+
+The Lag variables tend to be more spread out around the year 2000 and condense the following years
+
+b)
+
+```{r}
+model_data <- data %>% 
+  select(Direction, Lag1, Lag2, Lag3, Lag4, Lag5, Volume)
+
+model_data$Direction <- ifelse(model_data$Direction == 'Down', 0, 1)
+
+model <- lm(Direction ~ ., model_data)
+
+model
+
+```
+
+
+All of the variables have a negative coefficient except for Lag2.
+
+c)
+
+```{r}
+
+preds <- predict(model)
+
+preds <- ifelse(preds > 0.5, 1, 0)
+
+preds <- as.factor(preds)
+
+model_data$Direction <- as.factor(model_data$Direction)
+
+confusionMatrix(data = preds, reference = model_data$Direction)
+
+
+```
+
+The model is about 56% accurate.
+
+d)
+
+```{r}
+train <- data %>% 
+  filter(Year <= 2008)
+
+test <- data %>% 
+  filter(Year > 2008)
+
+test$Direction <- ifelse(test$Direction == 'Down', 0, 1)
+train$Direction <- ifelse(train$Direction == 'Down', 0, 1)
+
+model <- lm(Direction ~ Lag2, train)
+
+preds <- predict(model, test)
+
+preds <- ifelse(preds > 0.5, 1, 0)
+
+preds <- as.factor(preds)
+test$Direction <- as.factor(test$Direction)
+
+confusionMatrix(data = preds, reference = test$Direction)
+```
+
+e)
+
+```{r}
+model <- lda(Direction ~ Lag2, train)
+
+preds <- predict(model, test)
+
+preds$class <- as.factor(preds$class)
+test$Direction <- as.factor(test$Direction)
+
+confusionMatrix(data = preds$class, reference = test$Direction)
+```
+
+f)
+
+```{r}
+model <- qda(Direction ~ Lag2, train)
+
+preds <- predict(model, test)
+
+preds$class <- as.factor(preds$class)
+test$Direction <- as.factor(test$Direction)
+
+confusionMatrix(data = preds$class, reference = test$Direction)
+```
+
+g)
+
+```{r}
+
+cl <- train$Direction
+knn1(train$Lag2, test$Lag2, cl)
+
+
+```
+
+h) The most accurate seems to be lda in (e), with accuracy of 0.625
+
