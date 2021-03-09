@@ -161,8 +161,9 @@ g)
 ```{r}
 
 cl <- train$Direction
-knn1(train$Lag2, test$Lag2, cl)
+preds <- knn(as.data.frame(train$Lag2), as.data.frame(test$Lag2), cl, k = 1)
 
+confusionMatrix(data = preds, reference = test$Direction)
 
 ```
 
